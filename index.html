@@ -88,6 +88,14 @@
             background-color: #da190b;
         }
         
+        .save-btn {
+            background-color: #ff9800;
+        }
+        
+        .save-btn:hover {
+            background-color: #f57c00;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -233,6 +241,7 @@
             <button id="export-btn" class="export-btn">导出Excel</button>
             <button id="add-employee" class="add-btn">添加员工</button>
             <button id="delete-selected" class="remove-btn">删除选中</button>
+            <button id="save-data" class="save-btn">保存数据</button>
         </div>
         <style>
             .title-section {
@@ -670,6 +679,16 @@
                 updateTitle();
             });
             
+            // 保存数据按钮
+            document.getElementById('save-data').addEventListener('click', function() {
+                try {
+                    savePresetData();
+                } catch (error) {
+                    console.error('保存数据失败:', error);
+                    showMessage('保存数据失败，请稍后重试', 'error');
+                }
+            });
+            
             // 为所有现有行添加复选框
             addCheckboxesToExistingRows();
             
@@ -763,19 +782,78 @@
             });
         }
         
+        // 保存预设数据函数
+        function savePresetData() {
+            try {
+                const tbody = document.querySelector('#salary-table tbody');
+                const rows = tbody.querySelectorAll('tr');
+                const presetData = [];
+                
+                rows.forEach(row => {
+                    const name = row.querySelector('.name').value.trim();
+                    const department = row.querySelector('.department').value.trim();
+                    const position = row.querySelector('.position').value;
+                    
+                    // 只保存姓名不为空的行数据
+                    if (name) {
+                        const employeeData = {
+                            name: name,
+                            department: department,
+                            position: position,
+                            basic: parseFloat(row.querySelector('.basic').value) || 0,
+                            fullAttendance: parseFloat(row.querySelector('.full-attendance').value) || 0,
+                            overtime: parseFloat(row.querySelector('.overtime').value) || 0,
+                            performance: parseFloat(row.querySelector('.performance').value) || 0,
+                            other: parseFloat(row.querySelector('.other').value) || 0,
+                            socialSecurity: parseFloat(row.querySelector('.social-security').value) || 0,
+                            noPunch: parseFloat(row.querySelector('.no-punch').value) || 0,
+                            fine: parseFloat(row.querySelector('.fine').value) || 0
+                        };
+                        presetData.push(employeeData);
+                    }
+                });
+                
+                if (presetData.length === 0) {
+                    showMessage('没有可保存的数据，请确保表格中有姓名不为空的行', 'warning');
+                    return;
+                }
+                
+                // 保存到localStorage
+                localStorage.setItem('presetEmployeeData', JSON.stringify(presetData));
+                showMessage('预设数据保存成功，下次打开时将自动加载', 'success');
+            } catch (error) {
+                console.error('保存预设数据失败:', error);
+                showMessage('保存数据失败，请稍后重试', 'error');
+            }
+        }
+        
         // 生成工资表
         function generateSalaryTable() {
             console.log('开始加载预设数据');
-            // 预设数据
-            const presetData = [
-                { name: '卢晓风', department: '生产', position: '领班', basic: 13000, fullAttendance: 200, overtime: 0, performance: 500, other: 800, socialSecurity: 0, noPunch: 0, fine: 0 },
-                { name: '卢道松', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
-                { name: '梁春梅', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
-                { name: '梁建梅', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
-                { name: '张鑫鑫', department: '组装', position: '作业员', basic: 2176.36, fullAttendance: 0, overtime: 661.5, performance: 200, other: 0, socialSecurity: 524.96, noPunch: 0, fine: 0 },
-                { name: '廖焕然', department: '组装', position: '作业员', basic: 2176.36, fullAttendance: 0, overtime: 724.5, performance: 200, other: 500, socialSecurity: 0, noPunch: 0, fine: 0 },
-                { name: '葛兆美', department: '组装', position: '保洁', basic: 4000, fullAttendance: 200, overtime: 0, performance: 0, other: 300, socialSecurity: 0, noPunch: 0, fine: 0 }
-            ];
+            let presetData = null;
+            try {
+                const savedData = localStorage.getItem('presetEmployeeData');
+                if (savedData) {
+                    presetData = JSON.parse(savedData);
+                    console.log('从localStorage加载到预设数据:', presetData);
+                }
+            } catch (error) {
+                console.error('加载保存的数据失败:', error);
+            }
+            
+            // 如果没有保存的数据或加载失败，使用默认数据
+            if (!presetData || !Array.isArray(presetData) || presetData.length === 0) {
+                presetData = [
+                    { name: '卢晓风', department: '生产', position: '领班', basic: 13000, fullAttendance: 200, overtime: 0, performance: 500, other: 800, socialSecurity: 0, noPunch: 0, fine: 0 },
+                    { name: '卢道松', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
+                    { name: '梁春梅', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
+                    { name: '梁建梅', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
+                    { name: '张鑫鑫', department: '组装', position: '作业员', basic: 2176.36, fullAttendance: 0, overtime: 661.5, performance: 200, other: 0, socialSecurity: 524.96, noPunch: 0, fine: 0 },
+                    { name: '廖焕然', department: '组装', position: '作业员', basic: 2176.36, fullAttendance: 0, overtime: 724.5, performance: 200, other: 500, socialSecurity: 0, noPunch: 0, fine: 0 },
+                    { name: '葛兆美', department: '组装', position: '保洁', basic: 4000, fullAttendance: 200, overtime: 0, performance: 0, other: 300, socialSecurity: 0, noPunch: 0, fine: 0 }
+                ];
+                console.log('使用默认预设数据:', presetData);
+            }
             
             console.log('预设数据:', presetData);
             
@@ -966,182 +1044,39 @@
                 return;
             }
             
-            // 创建二次确认弹窗
-            createDeleteConfirmationModal(checkboxes);
+            // 直接执行删除操作（跳过二次确认）
+            showLoading();
+            
+            setTimeout(() => {
+                try {
+                    const tbody = document.querySelector('#salary-table tbody');
+                    checkboxes.forEach(checkbox => {
+                        const row = checkbox.closest('tr');
+                        if (row) {
+                            tbody.removeChild(row);
+                        }
+                    });
+                    
+                    // 更新序号
+                    updateRowNumbers();
+                    
+                    // 过滤空行
+                    filterEmptyRows();
+                    
+                    // 取消全选
+                    document.getElementById('select-all').checked = false;
+                    
+                    showMessage(`成功删除 ${checkboxes.length} 名员工`, 'success');
+                } catch (error) {
+                    console.error('删除选中员工失败:', error);
+                    showMessage('删除选中员工失败', 'error');
+                } finally {
+                    hideLoading();
+                }
+            }, 500);
         }
         
-        // 创建删除确认弹窗
-        function createDeleteConfirmationModal(checkboxes) {
-            // 创建弹窗容器
-            const modal = document.createElement('div');
-            modal.className = 'delete-confirmation-modal';
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.5);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 10000;
-            `;
-            
-            // 创建弹窗内容
-            const modalContent = document.createElement('div');
-            modalContent.style.cssText = `
-                background-color: white;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                max-width: 500px;
-                width: 90%;
-            `;
-            
-            // 弹窗标题
-            const modalTitle = document.createElement('h3');
-            modalTitle.textContent = '删除确认';
-            modalTitle.style.cssText = `
-                margin-top: 0;
-                color: #333;
-                font-size: 18px;
-                font-weight: bold;
-            `;
-            
-            // 弹窗消息
-            const modalMessage = document.createElement('p');
-            modalMessage.textContent = `您确定要删除选中的 ${checkboxes.length} 名员工吗？此操作不可逆，删除后数据将无法恢复。`;
-            modalMessage.style.cssText = `
-                margin: 20px 0;
-                color: #666;
-                line-height: 1.5;
-            `;
-            
-            // 警告信息
-            const warningMessage = document.createElement('p');
-            warningMessage.textContent = '警告：删除操作将永久移除这些员工的所有信息，请谨慎操作！';
-            warningMessage.style.cssText = `
-                margin: 10px 0 20px 0;
-                color: #f44336;
-                font-weight: bold;
-                background-color: #ffebee;
-                padding: 10px;
-                border-radius: 4px;
-            `;
-            
-            // 按钮容器
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.cssText = `
-                display: flex;
-                justify-content: flex-end;
-                gap: 10px;
-                margin-top: 20px;
-            `;
-            
-            // 取消按钮
-            const cancelButton = document.createElement('button');
-            cancelButton.textContent = '取消';
-            cancelButton.style.cssText = `
-                padding: 10px 20px;
-                background-color: #f1f1f1;
-                color: #333;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: background-color 0.3s;
-            `;
-            cancelButton.addEventListener('mouseover', function() {
-                this.style.backgroundColor = '#e0e0e0';
-            });
-            cancelButton.addEventListener('mouseout', function() {
-                this.style.backgroundColor = '#f1f1f1';
-            });
-            
-            // 确认删除按钮
-            const confirmButton = document.createElement('button');
-            confirmButton.textContent = '确认删除';
-            confirmButton.style.cssText = `
-                padding: 10px 20px;
-                background-color: #f44336;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: background-color 0.3s;
-            `;
-            confirmButton.addEventListener('mouseover', function() {
-                this.style.backgroundColor = '#da190b';
-            });
-            confirmButton.addEventListener('mouseout', function() {
-                this.style.backgroundColor = '#f44336';
-            });
-            
-            // 组装弹窗
-            buttonContainer.appendChild(cancelButton);
-            buttonContainer.appendChild(confirmButton);
-            
-            modalContent.appendChild(modalTitle);
-            modalContent.appendChild(modalMessage);
-            modalContent.appendChild(warningMessage);
-            modalContent.appendChild(buttonContainer);
-            
-            modal.appendChild(modalContent);
-            
-            // 添加到页面
-            document.body.appendChild(modal);
-            
-            // 取消按钮事件
-            cancelButton.addEventListener('click', function() {
-                document.body.removeChild(modal);
-            });
-            
-            // 点击弹窗外部关闭
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            });
-            
-            // 确认删除按钮事件
-            confirmButton.addEventListener('click', function() {
-                // 显示加载状态
-                showLoading();
-                
-                // 移除弹窗
-                document.body.removeChild(modal);
-                
-                setTimeout(() => {
-                    try {
-                        const tbody = document.querySelector('#salary-table tbody');
-                        checkboxes.forEach(checkbox => {
-                            const row = checkbox.closest('tr');
-                            if (row) {
-                                tbody.removeChild(row);
-                            }
-                        });
-                        
-                        // 更新序号
-                        updateRowNumbers();
-                        
-                        // 过滤空行
-                        filterEmptyRows();
-                        
-                        // 取消全选
-                        document.getElementById('select-all').checked = false;
-                        
-                        showMessage(`成功删除 ${checkboxes.length} 名员工`, 'success');
-                    } catch (error) {
-                        console.error('删除选中员工失败:', error);
-                        showMessage('删除选中员工失败', 'error');
-                    } finally {
-                        hideLoading();
-                    }
-                }, 500);
-            });
-        }
+
         
         // 显示消息
         function showMessage(message, type = 'info') {
