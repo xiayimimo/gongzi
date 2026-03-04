@@ -1282,9 +1282,13 @@
                 
                 // 获取底部扩展信息
                 const footerInputs = document.querySelectorAll('.footer-input');
+                // 使用更精确的选择器获取制表时间
+                const firstFooterItem = document.querySelector('.footer .footer-item:first-child');
+                const makeDateInput = firstFooterItem.querySelector('input[type="date"]');
+                
                 const footerData = {
                     maker: footerInputs[0] ? footerInputs[0].value : '',
-                    makeDate: footerInputs[1] ? footerInputs[1].value : new Date().toISOString().split('T')[0],
+                    makeDate: makeDateInput ? makeDateInput.value : new Date().toISOString().split('T')[0],
                     finance: footerInputs[2] ? footerInputs[2].value : '',
                     financeStamp: footerInputs[3] ? footerInputs[3].value : '',
                     manager: footerInputs[4] ? footerInputs[4].value : '',
@@ -1436,9 +1440,9 @@
                 
                 showExportProgress('添加页脚信息...');
                 
-                // 添加页脚
-                const footerRow1 = worksheet.addRow(['制表人：', footerData.maker, '', '', '', '财务部：', footerData.finance, '', '', '', '经理：', footerData.manager, '', '', '', '']);
-                const footerRow2 = worksheet.addRow(['制表时间：', footerData.makeDate, '', '', '', '签字及盖章：', footerData.financeStamp, '', '', '', '签字及盖章：', footerData.managerStamp, '', '', '', '']);
+                // 添加页脚 - 将数据和标签合并到同一个单元格
+                const footerRow1 = worksheet.addRow([`制表人：${footerData.maker}`, '', '', '', '', `财务部：${footerData.finance}`, '', '', '', '', `经理：${footerData.manager}`, '', '', '', '', '']);
+                const footerRow2 = worksheet.addRow([`制表时间：${footerData.makeDate}`, '', '', '', '', `签字及盖章：${footerData.financeStamp}`, '', '', '', '', `签字及盖章：${footerData.managerStamp}`, '', '', '', '', '']);
                 
                 // 设置页脚样式
                 for (let i = 1; i <= 2; i++) {
