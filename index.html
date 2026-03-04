@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工工资核算</title>
+    <script src="js/exceljs.min.js"></script>
+    <script src="js/FileSaver.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e8f5e8;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #e8f5e8;
+            padding: 20px;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:active {
+            background-color: #3e8e41;
+        }
+        
+        .export-btn {
+            background-color: #2196F3;
+        }
+        
+        .export-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .add-btn {
+            background-color: #4CAF50;
+        }
+        
+        .add-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .remove-btn {
+            background-color: #f44336;
+        }
+        
+        .remove-btn:hover {
+            background-color: #da190b;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            word-wrap: break-word;
+            white-space: normal;
+            min-width: 80px;
+        }
+        
+        .container {
+            overflow-x: auto;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            background-color: white;
+            color: #333;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .remark input {
+            text-align: left;
+            min-height: 60px;
+            resize: vertical;
+        }
+        
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        tr:hover {
+            background-color: #e8f5e8;
+        }
+        
+        select {
+            height: 30px;
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            background-color: white;
+            color: #333;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        
+        .calculated {
+            background-color: #e8f5e8;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .footer-item {
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                overflow-x: auto;
+            }
+            
+            table {
+                font-size: 12px;
+                min-width: 1000px;
+            }
+            
+            th, td {
+                padding: 4px;
+                word-wrap: break-word;
+                white-space: normal;
+            }
+            
+            .footer {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .title-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .date-section {
+                width: 100%;
+            }
+            
+            .custom-date-picker {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            
+            .date-select {
+                max-width: none;
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-section">
+            <h1 id="salary-title" style="text-align: center; width: 100%;">2026年 2 月工资表</h1>
+            <div class="date-section" id="date-section">
+                <label>日期：</label>
+                <input type="month" id="salary-month" value="2026-02" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; min-width: 150px;">
+            </div>
+        </div>
+        <div class="controls">
+            <button id="export-btn" class="export-btn">导出Excel</button>
+            <button id="add-employee" class="add-btn">添加员工</button>
+            <button id="delete-selected" class="remove-btn">删除选中</button>
+        </div>
+        <style>
+            .title-section {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .date-section {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-direction: row;
+            }
+            
+            .date-section label {
+                display: inline-block;
+                margin-right: 5px;
+                font-weight: bold;
+                white-space: nowrap;
+            }
+            
+            .custom-date-picker {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: nowrap;
+                min-width: 0;
+                white-space: nowrap;
+            }
+            
+            .date-select {
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                min-width: 100px;
+                width: 120px;
+                background-color: white;
+                color: #333;
+                box-sizing: border-box;
+                overflow: visible;
+            }
+            
+            .date-select:focus {
+                outline: none;
+                border-color: #4CAF50;
+                box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+            }
+            
+            .date-separator {
+                font-size: 16px;
+                font-weight: bold;
+                color: #333;
+            }
+            
+
+        </style>
+        <table id="salary-table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>序号</th>
+                    <th>姓名</th>
+                    <th>部门</th>
+                    <th>职位</th>
+                    <th>基本工资</th>
+                    <th>全勤奖</th>
+                    <th>加班补贴</th>
+                    <th>业绩超额奖</th>
+                    <th>其他补助</th>
+                    <th>应发工资</th>
+                    <th>社保扣款</th>
+                    <th>未打卡扣款</th>
+                    <th>罚款</th>
+                    <th>实发工资</th>
+                    <th>领取人</th>
+                    <th>备注</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>1</td>
+                    <td><input type="text" class="name" value="aaa"></td>
+                    <td><input type="text" class="department" value="生产"></td>
+                    <td><select class="position">
+                        <option value="领班" selected>领班</option>
+                        <option value="作业员">作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="13000"></td>
+                    <td><input type="text" class="full-attendance" value="200"></td>
+                    <td><input type="text" class="overtime" value="0"></td>
+                    <td><input type="text" class="performance" value="500"></td>
+                    <td><input type="text" class="other" value="800"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>2</td>
+                    <td><input type="text" class="name" value="bbb"></td>
+                    <td><input type="text" class="department" value="组装"></td>
+                    <td><select class="position">
+                        <option value="领班">领班</option>
+                        <option value="作业员" selected>作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="7000"></td>
+                    <td><input type="text" class="full-attendance" value="200"></td>
+                    <td><input type="text" class="overtime" value="0"></td>
+                    <td><input type="text" class="performance" value="300"></td>
+                    <td><input type="text" class="other" value="0"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>3</td>
+                    <td><input type="text" class="name" value="c"></td>
+                    <td><input type="text" class="department" value="组装"></td>
+                    <td><select class="position">
+                        <option value="领班">领班</option>
+                        <option value="作业员" selected>作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="7000"></td>
+                    <td><input type="text" class="full-attendance" value="200"></td>
+                    <td><input type="text" class="overtime" value="0"></td>
+                    <td><input type="text" class="performance" value="300"></td>
+                    <td><input type="text" class="other" value="0"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>4</td>
+                    <td><input type="text" class="name" value="d"></td>
+                    <td><input type="text" class="department" value="组装"></td>
+                    <td><select class="position">
+                        <option value="领班">领班</option>
+                        <option value="作业员" selected>作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="7000"></td>
+                    <td><input type="text" class="full-attendance" value="200"></td>
+                    <td><input type="text" class="overtime" value="0"></td>
+                    <td><input type="text" class="performance" value="300"></td>
+                    <td><input type="text" class="other" value="0"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>5</td>
+                    <td><input type="text" class="name" value="e"></td>
+                    <td><input type="text" class="department" value="组装"></td>
+                    <td><select class="position">
+                        <option value="领班">领班</option>
+                        <option value="作业员" selected>作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="2176.36"></td>
+                    <td><input type="text" class="full-attendance" value="0"></td>
+                    <td><input type="text" class="overtime" value="661.5"></td>
+                    <td><input type="text" class="performance" value="200"></td>
+                    <td><input type="text" class="other" value="0"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security" value="524.96"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>6</td>
+                    <td><input type="text" class="name" value="f"></td>
+                    <td><input type="text" class="department" value="组装"></td>
+                    <td><select class="position">
+                        <option value="领班">领班</option>
+                        <option value="作业员" selected>作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="2176.36"></td>
+                    <td><input type="text" class="full-attendance" value="0"></td>
+                    <td><input type="text" class="overtime" value="724.5"></td>
+                    <td><input type="text" class="performance" value="200"></td>
+                    <td><input type="text" class="other" value="500"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>7</td>
+                    <td><input type="text" class="name" value="d"></td>
+                    <td><input type="text" class="department" value="组装"></td>
+                    <td><select class="position">
+                        <option value="领班">领班</option>
+                        <option value="作业员">作业员</option>
+                        <option value="保洁" selected>保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="13000"></td>
+                    <td><input type="text" class="full-attendance" value="200"></td>
+                    <td><input type="text" class="overtime" value="0"></td>
+                    <td><input type="text" class="performance" value="0"></td>
+                    <td><input type="text" class="other" value="300"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>8</td>
+                    <td><input type="text" class="name"></td>
+                    <td><input type="text" class="department"></td>
+                    <td><select class="position">
+                        <option value="">请选择职位</option>
+                        <option value="领班">领班</option>
+                        <option value="作业员">作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic"></td>
+                    <td><input type="text" class="full-attendance"></td>
+                    <td><input type="text" class="overtime"></td>
+                    <td><input type="text" class="performance"></td>
+                    <td><input type="text" class="other"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>9</td>
+                    <td><input type="text" class="name"></td>
+                    <td><input type="text" class="department"></td>
+                    <td><select class="position">
+                        <option value="">请选择职位</option>
+                        <option value="领班">领班</option>
+                        <option value="作业员">作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic"></td>
+                    <td><input type="text" class="full-attendance"></td>
+                    <td><input type="text" class="overtime"></td>
+                    <td><input type="text" class="performance"></td>
+                    <td><input type="text" class="other"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>10</td>
+                    <td><input type="text" class="name"></td>
+                    <td><input type="text" class="department"></td>
+                    <td><select class="position">
+                        <option value="">请选择职位</option>
+                        <option value="领班">领班</option>
+                        <option value="作业员">作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic"></td>
+                    <td><input type="text" class="full-attendance"></td>
+                    <td><input type="text" class="overtime"></td>
+                    <td><input type="text" class="performance"></td>
+                    <td><input type="text" class="other"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>11</td>
+                    <td><input type="text" class="name"></td>
+                    <td><input type="text" class="department"></td>
+                    <td><select class="position">
+                        <option value="">请选择职位</option>
+                        <option value="领班">领班</option>
+                        <option value="作业员">作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic"></td>
+                    <td><input type="text" class="full-attendance"></td>
+                    <td><input type="text" class="overtime"></td>
+                    <td><input type="text" class="performance"></td>
+                    <td><input type="text" class="other"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="footer">
+            <div class="footer-item">
+                <p>制表人：<input type="text" class="footer-input"></p>
+                <p>制表时间：<input type="date" class="footer-input" value="2026-03-03"></p>
+            </div>
+            <div class="footer-item">
+                <p>财务部：<input type="text" class="footer-input"></p>
+                <p>签字及盖章：<input type="text" class="footer-input"></p>
+            </div>
+            <div class="footer-item">
+                <p>经理：<input type="text" class="footer-input"></p>
+                <p>签字及盖章：<input type="text" class="footer-input"></p>
+            </div>
+        </div>
+        <style>
+            .footer-input {
+                width: 60%;
+                padding: 4px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin-left: 5px;
+            }
+        </style>
+    </div>
+    <script>
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载预设数据
+            generateSalaryTable();
+            
+            // 计算所有行的工资
+            calculateAllRows();
+            
+            // 添加事件监听器
+            addEventListeners();
+            
+
+            
+            // 导出Excel按钮
+            document.getElementById('export-btn').addEventListener('click', function() {
+                exportToExcel();
+            });
+            
+            // 添加员工按钮
+            document.getElementById('add-employee').addEventListener('click', function(e) {
+                e.preventDefault();
+                try {
+                    addEmployee();
+                    console.log('添加员工成功');
+                } catch (error) {
+                    console.error('添加员工失败:', error);
+                }
+            });
+            
+
+            
+            // 删除选中按钮
+            document.getElementById('delete-selected').addEventListener('click', function(e) {
+                e.preventDefault();
+                try {
+                    deleteSelectedEmployees();
+                } catch (error) {
+                    console.error('删除选中员工失败:', error);
+                    showMessage('删除选中员工失败', 'error');
+                }
+            });
+            
+            // 月份选择器
+            document.getElementById('salary-month').addEventListener('change', function() {
+                updateTitle();
+            });
+            
+            // 为所有现有行添加复选框
+            addCheckboxesToExistingRows();
+            
+            // 初始化全选功能
+            initSelectAll();
+            
+            // 初始过滤空行
+            filterEmptyRows();
+        });
+        
+        // 为现有行添加复选框
+        function addCheckboxesToExistingRows() {
+            const rows = document.querySelectorAll('#salary-table tbody tr');
+            rows.forEach(row => {
+                const firstCell = row.querySelector('td:first-child');
+                if (!firstCell.querySelector('input[type="checkbox"]')) {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'employee-checkbox';
+                    firstCell.insertBefore(checkbox, firstCell.firstChild);
+                }
+            });
+        }
+        
+        // 初始化全选功能
+        function initSelectAll() {
+            const selectAll = document.getElementById('select-all');
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.employee-checkbox');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                });
+            }
+        }
+        
+        // 计算单行工资
+        function calculateRow(row) {
+            const basic = parseFloat(row.querySelector('.basic').value) || 0;
+            const fullAttendance = parseFloat(row.querySelector('.full-attendance').value) || 0;
+            const overtime = parseFloat(row.querySelector('.overtime').value) || 0;
+            const performance = parseFloat(row.querySelector('.performance').value) || 0;
+            const other = parseFloat(row.querySelector('.other').value) || 0;
+            const socialSecurity = parseFloat(row.querySelector('.social-security').value) || 0;
+            const noPunch = parseFloat(row.querySelector('.no-punch').value) || 0;
+            const fine = parseFloat(row.querySelector('.fine').value) || 0;
+            
+            // 计算应发工资
+            const gross = basic + fullAttendance + overtime + performance + other;
+            
+            // 计算实发工资
+            const net = gross - socialSecurity - noPunch - fine;
+            
+            // 更新计算结果
+            row.querySelector('.gross').value = gross.toFixed(2);
+            row.querySelector('.net').value = net.toFixed(2);
+        }
+        
+        // 计算所有行的工资
+        function calculateAllRows() {
+            const rows = document.querySelectorAll('#salary-table tbody tr');
+            rows.forEach(row => {
+                calculateRow(row);
+            });
+        }
+        
+        // 添加事件监听器
+        function addEventListeners() {
+            const inputs = document.querySelectorAll('#salary-table input, #salary-table select');
+            inputs.forEach(input => {
+                // 跳过只读输入框
+                if (input.readOnly) return;
+                
+                // 跳过复选框，避免勾选时触发filterEmptyRows
+                if (input.type === 'checkbox') return;
+                
+                if (input.tagName === 'SELECT') {
+                    input.addEventListener('change', function() {
+                        const row = this.closest('tr');
+                        calculateRow(row);
+                        filterEmptyRows();
+                    });
+                } else {
+                    input.addEventListener('input', function() {
+                        const row = this.closest('tr');
+                        calculateRow(row);
+                        filterEmptyRows();
+                    });
+                }
+            });
+        }
+        
+        // 生成工资表
+        function generateSalaryTable() {
+            console.log('开始加载预设数据');
+            // 预设数据
+            const presetData = [
+                { name: '卢晓风', department: '生产', position: '领班', basic: 13000, fullAttendance: 200, overtime: 0, performance: 500, other: 800, socialSecurity: 0, noPunch: 0, fine: 0 },
+                { name: '卢道松', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
+                { name: '梁春梅', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
+                { name: '梁建梅', department: '组装', position: '作业员', basic: 7000, fullAttendance: 200, overtime: 0, performance: 300, other: 0, socialSecurity: 0, noPunch: 0, fine: 0 },
+                { name: '张鑫鑫', department: '组装', position: '作业员', basic: 2176.36, fullAttendance: 0, overtime: 661.5, performance: 200, other: 0, socialSecurity: 524.96, noPunch: 0, fine: 0 },
+                { name: '廖焕然', department: '组装', position: '作业员', basic: 2176.36, fullAttendance: 0, overtime: 724.5, performance: 200, other: 500, socialSecurity: 0, noPunch: 0, fine: 0 },
+                { name: '葛兆美', department: '组装', position: '保洁', basic: 4000, fullAttendance: 200, overtime: 0, performance: 0, other: 300, socialSecurity: 0, noPunch: 0, fine: 0 }
+            ];
+            
+            console.log('预设数据:', presetData);
+            
+            const tbody = document.querySelector('#salary-table tbody');
+            // 清空tbody
+            tbody.innerHTML = '';
+            
+            // 为每个预设数据创建新行
+            presetData.forEach((data, index) => {
+                console.log('创建第', index + 1, '行数据:', data);
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>${index + 1}</td>
+                    <td><input type="text" class="name" value="${data.name}"></td>
+                    <td><input type="text" class="department" value="${data.department}"></td>
+                    <td><select class="position">
+                        <option value="领班" ${data.position === '领班' ? 'selected' : ''}>领班</option>
+                        <option value="作业员" ${data.position === '作业员' ? 'selected' : ''}>作业员</option>
+                        <option value="保洁" ${data.position === '保洁' ? 'selected' : ''}>保洁</option>
+                        <option value="主管" ${data.position === '主管' ? 'selected' : ''}>主管</option>
+                        <option value="经理" ${data.position === '经理' ? 'selected' : ''}>经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic" value="${data.basic}"></td>
+                    <td><input type="text" class="full-attendance" value="${data.fullAttendance}"></td>
+                    <td><input type="text" class="overtime" value="${data.overtime}"></td>
+                    <td><input type="text" class="performance" value="${data.performance}"></td>
+                    <td><input type="text" class="other" value="${data.other}"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security" value="${data.socialSecurity}"></td>
+                    <td><input type="text" class="no-punch" value="${data.noPunch}"></td>
+                    <td><input type="text" class="fine" value="${data.fine}"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                `;
+                tbody.appendChild(newRow);
+                
+                // 计算该行工资
+                calculateRow(newRow);
+            });
+            
+            // 添加额外的空行
+            for (let i = presetData.length; i < 11; i++) {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td><input type="checkbox" class="employee-checkbox"></td>
+                    <td>${i + 1}</td>
+                    <td><input type="text" class="name"></td>
+                    <td><input type="text" class="department"></td>
+                    <td><select class="position">
+                        <option value="">请选择职位</option>
+                        <option value="领班">领班</option>
+                        <option value="作业员">作业员</option>
+                        <option value="保洁">保洁</option>
+                        <option value="主管">主管</option>
+                        <option value="经理">经理</option>
+                    </select></td>
+                    <td><input type="text" class="basic"></td>
+                    <td><input type="text" class="full-attendance"></td>
+                    <td><input type="text" class="overtime"></td>
+                    <td><input type="text" class="performance"></td>
+                    <td><input type="text" class="other"></td>
+                    <td><input type="text" class="gross" readonly class="calculated"></td>
+                    <td><input type="text" class="social-security"></td>
+                    <td><input type="text" class="no-punch"></td>
+                    <td><input type="text" class="fine"></td>
+                    <td><input type="text" class="net" readonly class="calculated"></td>
+                    <td><input type="text" class="recipient"></td>
+                    <td><input type="text" class="remark"></td>
+                `;
+                tbody.appendChild(newRow);
+            }
+            
+            // 为所有行添加复选框
+            addCheckboxesToExistingRows();
+            
+            // 初始化全选功能
+            initSelectAll();
+            
+            // 过滤空行
+            filterEmptyRows();
+            
+            // 添加事件监听器
+            addEventListeners();
+            
+            console.log('预设数据加载完成');
+        }
+        
+        // 添加员工
+        function addEmployee() {
+            const tbody = document.querySelector('#salary-table tbody');
+            
+            // 计算新行序号：从所有显示的行中找到最大序号值，然后加1
+            let maxIndex = 0;
+            const rows = tbody.querySelectorAll('tr');
+            
+            // 遍历所有行，找到最大序号值（只考虑显示的行）
+            rows.forEach(row => {
+                // 只考虑显示的行
+                if (!row.style.display || row.style.display === '') {
+                    const indexText = row.querySelector('td:nth-child(2)').textContent;
+                    const index = parseInt(indexText) || 0;
+                    if (index > maxIndex) {
+                        maxIndex = index;
+                    }
+                }
+            });
+            
+            // 新序号为最大序号 + 1，如果是空表则从1开始
+            const newRowIndex = maxIndex + 1;
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="checkbox" class="employee-checkbox"></td>
+                <td>${newRowIndex}</td>
+                <td><input type="text" class="name" placeholder="请输入姓名"></td>
+                <td><input type="text" class="department" placeholder="请输入部门"></td>
+                <td><select class="position">
+                    <option value="">请选择职位</option>
+                    <option value="领班">领班</option>
+                    <option value="作业员">作业员</option>
+                    <option value="保洁">保洁</option>
+                    <option value="主管">主管</option>
+                    <option value="经理">经理</option>
+                </select></td>
+                <td><input type="text" class="basic" placeholder="请输入基本工资" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="full-attendance" placeholder="请输入全勤奖" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="overtime" placeholder="请输入加班补贴" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="performance" placeholder="请输入业绩超额奖" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="other" placeholder="请输入其他补助" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="gross" readonly class="calculated"></td>
+                <td><input type="text" class="social-security" placeholder="请输入社保扣款" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="no-punch" placeholder="请输入未打卡扣款" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="fine" placeholder="请输入罚款" oninput="this.value = this.value.replace(/[^0-9.]/g, '')"></td>
+                <td><input type="text" class="net" readonly class="calculated"></td>
+                <td><input type="text" class="recipient" placeholder="请输入领取人"></td>
+                <td><input type="text" class="remark" placeholder="请输入备注"></td>
+            `;
+            
+            tbody.appendChild(newRow);
+            
+            // 为新行添加事件监听器
+            const newInputs = newRow.querySelectorAll('input, select');
+            newInputs.forEach(input => {
+                if (!input.readOnly) {
+                    // 跳过复选框，避免勾选时触发filterEmptyRows
+                    if (input.type === 'checkbox') return;
+                    
+                    if (input.tagName === 'SELECT') {
+                        input.addEventListener('change', function() {
+                            const row = this.closest('tr');
+                            calculateRow(row);
+                            filterEmptyRows();
+                        });
+                    } else {
+                        input.addEventListener('input', function() {
+                            const row = this.closest('tr');
+                            calculateRow(row);
+                            filterEmptyRows();
+                        });
+                    }
+                }
+            });
+            
+            // 滚动到新添加的行
+            newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // 确保新添加的行显示出来
+            newRow.style.display = '';
+        }
+        
+        // 更新行序号
+        function updateRowNumbers() {
+            const rows = document.querySelectorAll('#salary-table tbody tr');
+            rows.forEach((row, index) => {
+                row.querySelector('td:nth-child(2)').textContent = index + 1;
+            });
+        }
+        
+
+        
+        // 删除选中员工
+        function deleteSelectedEmployees() {
+            const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showMessage('请至少选择一名员工', 'warning');
+                return;
+            }
+            
+            // 创建二次确认弹窗
+            createDeleteConfirmationModal(checkboxes);
+        }
+        
+        // 创建删除确认弹窗
+        function createDeleteConfirmationModal(checkboxes) {
+            // 创建弹窗容器
+            const modal = document.createElement('div');
+            modal.className = 'delete-confirmation-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            
+            // 创建弹窗内容
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background-color: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+                width: 90%;
+            `;
+            
+            // 弹窗标题
+            const modalTitle = document.createElement('h3');
+            modalTitle.textContent = '删除确认';
+            modalTitle.style.cssText = `
+                margin-top: 0;
+                color: #333;
+                font-size: 18px;
+                font-weight: bold;
+            `;
+            
+            // 弹窗消息
+            const modalMessage = document.createElement('p');
+            modalMessage.textContent = `您确定要删除选中的 ${checkboxes.length} 名员工吗？此操作不可逆，删除后数据将无法恢复。`;
+            modalMessage.style.cssText = `
+                margin: 20px 0;
+                color: #666;
+                line-height: 1.5;
+            `;
+            
+            // 警告信息
+            const warningMessage = document.createElement('p');
+            warningMessage.textContent = '警告：删除操作将永久移除这些员工的所有信息，请谨慎操作！';
+            warningMessage.style.cssText = `
+                margin: 10px 0 20px 0;
+                color: #f44336;
+                font-weight: bold;
+                background-color: #ffebee;
+                padding: 10px;
+                border-radius: 4px;
+            `;
+            
+            // 按钮容器
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                margin-top: 20px;
+            `;
+            
+            // 取消按钮
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = '取消';
+            cancelButton.style.cssText = `
+                padding: 10px 20px;
+                background-color: #f1f1f1;
+                color: #333;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background-color 0.3s;
+            `;
+            cancelButton.addEventListener('mouseover', function() {
+                this.style.backgroundColor = '#e0e0e0';
+            });
+            cancelButton.addEventListener('mouseout', function() {
+                this.style.backgroundColor = '#f1f1f1';
+            });
+            
+            // 确认删除按钮
+            const confirmButton = document.createElement('button');
+            confirmButton.textContent = '确认删除';
+            confirmButton.style.cssText = `
+                padding: 10px 20px;
+                background-color: #f44336;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background-color 0.3s;
+            `;
+            confirmButton.addEventListener('mouseover', function() {
+                this.style.backgroundColor = '#da190b';
+            });
+            confirmButton.addEventListener('mouseout', function() {
+                this.style.backgroundColor = '#f44336';
+            });
+            
+            // 组装弹窗
+            buttonContainer.appendChild(cancelButton);
+            buttonContainer.appendChild(confirmButton);
+            
+            modalContent.appendChild(modalTitle);
+            modalContent.appendChild(modalMessage);
+            modalContent.appendChild(warningMessage);
+            modalContent.appendChild(buttonContainer);
+            
+            modal.appendChild(modalContent);
+            
+            // 添加到页面
+            document.body.appendChild(modal);
+            
+            // 取消按钮事件
+            cancelButton.addEventListener('click', function() {
+                document.body.removeChild(modal);
+            });
+            
+            // 点击弹窗外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+            
+            // 确认删除按钮事件
+            confirmButton.addEventListener('click', function() {
+                // 显示加载状态
+                showLoading();
+                
+                // 移除弹窗
+                document.body.removeChild(modal);
+                
+                setTimeout(() => {
+                    try {
+                        const tbody = document.querySelector('#salary-table tbody');
+                        checkboxes.forEach(checkbox => {
+                            const row = checkbox.closest('tr');
+                            if (row) {
+                                tbody.removeChild(row);
+                            }
+                        });
+                        
+                        // 更新序号
+                        updateRowNumbers();
+                        
+                        // 过滤空行
+                        filterEmptyRows();
+                        
+                        // 取消全选
+                        document.getElementById('select-all').checked = false;
+                        
+                        showMessage(`成功删除 ${checkboxes.length} 名员工`, 'success');
+                    } catch (error) {
+                        console.error('删除选中员工失败:', error);
+                        showMessage('删除选中员工失败', 'error');
+                    } finally {
+                        hideLoading();
+                    }
+                }, 500);
+            });
+        }
+        
+        // 显示消息
+        function showMessage(message, type = 'info') {
+            // 创建消息元素
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${type}`;
+            messageElement.textContent = message;
+            
+            // 设置消息样式
+            messageElement.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 4px;
+                color: white;
+                font-weight: bold;
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            // 根据类型设置背景颜色
+            switch (type) {
+                case 'success':
+                    messageElement.style.backgroundColor = '#4CAF50';
+                    break;
+                case 'error':
+                    messageElement.style.backgroundColor = '#f44336';
+                    break;
+                case 'warning':
+                    messageElement.style.backgroundColor = '#ff9800';
+                    break;
+                default:
+                    messageElement.style.backgroundColor = '#2196F3';
+            }
+            
+            // 添加动画
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // 添加到页面
+            document.body.appendChild(messageElement);
+            
+            // 3秒后移除
+            setTimeout(() => {
+                messageElement.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => {
+                    if (messageElement.parentNode) {
+                        messageElement.parentNode.removeChild(messageElement);
+                    }
+                    if (style.parentNode) {
+                        style.parentNode.removeChild(style);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 显示加载状态
+        function showLoading() {
+            // 创建加载元素
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'loading';
+            loadingElement.innerHTML = '<div class="loading-spinner"></div><div>处理中...</div>';
+            
+            // 设置加载样式
+            loadingElement.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(255, 255, 255, 0.8);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            `;
+            
+            // 添加加载动画
+            const style = document.createElement('style');
+            style.textContent = `
+                .loading-spinner {
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #4CAF50;
+                    border-radius: 50%;
+                    width: 40px;
+                    height: 40px;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 10px;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // 添加到页面
+            document.body.appendChild(loadingElement);
+        }
+        
+        // 隐藏加载状态
+        function hideLoading() {
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement && loadingElement.parentNode) {
+                loadingElement.parentNode.removeChild(loadingElement);
+            }
+        }
+        
+        // 切换日期显示
+        function toggleDateSection() {
+            // 日期显示功能已简化，始终显示日期选择器
+        }
+        
+        // 更新标题
+        function updateTitle() {
+            const monthInput = document.getElementById('salary-month');
+            const selectedMonth = monthInput.value;
+            const year = selectedMonth.split('-')[0];
+            const month = selectedMonth.split('-')[1];
+            
+            const title = document.getElementById('salary-title');
+            title.textContent = `${year}年 ${month} 月工资表`;
+        }
+        
+        // 过滤空行
+        function filterEmptyRows() {
+            const rows = document.querySelectorAll('#salary-table tbody tr');
+            rows.forEach(row => {
+                const name = row.querySelector('.name').value.trim();
+                const department = row.querySelector('.department').value.trim();
+                const position = row.querySelector('.position').value;
+                const basic = row.querySelector('.basic').value.trim();
+                
+                // 检查是否所有关键字段都为空
+                if (!name && !department && !position && !basic) {
+                    row.style.display = 'none';
+                } else {
+                    row.style.display = '';
+                }
+            });
+        }
+        
+        // 导出到Excel
+        // 显示导出进度
+        function showExportProgress(message) {
+            // 创建进度提示元素
+            let progressElement = document.getElementById('export-progress');
+            if (!progressElement) {
+                progressElement = document.createElement('div');
+                progressElement.id = 'export-progress';
+                progressElement.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 4px;
+                    z-index: 10000;
+                    font-size: 16px;
+                `;
+                document.body.appendChild(progressElement);
+            }
+            progressElement.textContent = message;
+        }
+        
+        // 隐藏导出进度
+        function hideExportProgress() {
+            const progressElement = document.getElementById('export-progress');
+            if (progressElement) {
+                document.body.removeChild(progressElement);
+            }
+        }
+        
+        // 导出到Excel
+        async function exportToExcel() {
+            try {
+                showExportProgress('准备导出数据...');
+                
+                // 获取选中的月份
+                const monthInput = document.getElementById('salary-month');
+                const selectedMonth = monthInput.value;
+                const year = selectedMonth.split('-')[0];
+                const month = selectedMonth.split('-')[1];
+                
+                // 获取页面标题
+                const title = `${year}年 ${month} 月工资表`;
+                
+                // 获取底部扩展信息
+                const footerInputs = document.querySelectorAll('.footer-input');
+                const footerData = {
+                    maker: footerInputs[0] ? footerInputs[0].value : '',
+                    makeDate: footerInputs[1] ? footerInputs[1].value : new Date().toISOString().split('T')[0],
+                    finance: footerInputs[2] ? footerInputs[2].value : '',
+                    financeStamp: footerInputs[3] ? footerInputs[3].value : '',
+                    manager: footerInputs[4] ? footerInputs[4].value : '',
+                    managerStamp: footerInputs[5] ? footerInputs[5].value : ''
+                };
+                
+                showExportProgress('创建工作簿...');
+                
+                // 创建工作簿
+                const workbook = new ExcelJS.Workbook();
+                workbook.creator = '工资核算系统';
+                workbook.lastModifiedBy = '财务人员';
+                workbook.created = new Date();
+                workbook.modified = new Date();
+                
+                // 创建工作表
+                const worksheet = workbook.addWorksheet(`${year}年${month}月工资表`);
+                
+                // 设置默认行高
+                worksheet.properties.defaultRowHeight = 20;
+                
+                // 添加表格标题
+                const titleRow = worksheet.addRow([title]);
+                titleRow.font = { bold: true, size: 16, name: '微软雅黑' };
+                titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+                titleRow.height = 30;
+                worksheet.mergeCells(titleRow.number, 1, titleRow.number, 16);
+                
+                // 手动添加表头
+                const headerRow = worksheet.addRow(['序号', '姓名', '部门', '职位', '基本工资', '全勤奖', '加班补贴', '业绩超额奖', '其他补助', '应发工资', '社保扣款', '未打卡扣款', '罚款', '实发工资', '领取人', '备注']);
+                headerRow.font = { bold: true, color: { argb: 'FFFFFF' }, name: '微软雅黑' };
+                headerRow.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: '003366' } // 深蓝色背景
+                };
+                headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+                headerRow.height = 25;
+                
+                // 设置表头边框
+                for (let i = 1; i <= 16; i++) {
+                    const cell = headerRow.getCell(i);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                }
+                
+                // 设置列宽
+                worksheet.columns = [
+                    { width: 8 },   // 序号
+                    { width: 10 },  // 姓名
+                    { width: 10 },  // 部门
+                    { width: 10 },  // 职位
+                    { width: 12 },  // 基本工资
+                    { width: 10 },  // 全勤奖
+                    { width: 10 },  // 加班补贴
+                    { width: 12 },  // 业绩超额奖
+                    { width: 10 },  // 其他补助
+                    { width: 12 },  // 应发工资
+                    { width: 12 },  // 社保扣款
+                    { width: 12 },  // 未打卡扣款
+                    { width: 8 },   // 罚款
+                    { width: 12 },  // 实发工资
+                    { width: 10 },  // 领取人
+                    { width: 15 }   // 备注
+                ];
+                
+                showExportProgress('填充数据...');
+                
+                // 填充数据
+                const rows = document.querySelectorAll('#salary-table tbody tr');
+                let dataRowCount = 0;
+                
+                rows.forEach((row, index) => {
+                    const name = row.querySelector('.name').value.trim();
+                    const department = row.querySelector('.department').value.trim();
+                    const position = row.querySelector('.position').value.trim();
+                    const basic = row.querySelector('.basic').value.trim();
+                    
+                    // 只导出有数据的行
+                    if (name || department || position || basic) {
+                        dataRowCount++;
+                        
+                        // 计算应发工资和实发工资
+                        const gross = parseFloat(row.querySelector('.gross').value) || 0;
+                        const net = parseFloat(row.querySelector('.net').value) || 0;
+                        
+                        const excelRow = worksheet.addRow([
+                            dataRowCount,
+                            row.querySelector('.name').value,
+                            row.querySelector('.department').value,
+                            row.querySelector('.position').value,
+                            parseFloat(row.querySelector('.basic').value) || 0,
+                            parseFloat(row.querySelector('.full-attendance').value) || 0,
+                            parseFloat(row.querySelector('.overtime').value) || 0,
+                            parseFloat(row.querySelector('.performance').value) || 0,
+                            parseFloat(row.querySelector('.other').value) || 0,
+                            gross,
+                            parseFloat(row.querySelector('.social-security').value) || 0,
+                            parseFloat(row.querySelector('.no-punch').value) || 0,
+                            parseFloat(row.querySelector('.fine').value) || 0,
+                            net,
+                            row.querySelector('.recipient').value,
+                            row.querySelector('.remark').value
+                        ]);
+                        
+                        // 设置单元格样式
+                        excelRow.alignment = { horizontal: 'center', vertical: 'middle' };
+                        
+                        // 设置边框
+                        for (let i = 1; i <= 16; i++) {
+                            const cell = excelRow.getCell(i);
+                            cell.border = {
+                                top: { style: 'thin' },
+                                left: { style: 'thin' },
+                                bottom: { style: 'thin' },
+                                right: { style: 'thin' }
+                            };
+                        }
+                        
+                        // 为第五行添加特殊背景色
+                        if (dataRowCount === 5) {
+                            for (let i = 1; i <= 16; i++) {
+                                const cell = excelRow.getCell(i);
+                                cell.fill = {
+                                    type: 'pattern',
+                                    pattern: 'solid',
+                                    fgColor: { argb: 'D4EDDA' }
+                                };
+                            }
+                        }
+                    }
+                });
+                
+                // 添加空行
+                const emptyRow = worksheet.addRow(new Array(16).fill(''));
+                for (let i = 1; i <= 16; i++) {
+                    const cell = emptyRow.getCell(i);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                }
+                
+                showExportProgress('添加页脚信息...');
+                
+                // 添加页脚
+                const footerRow1 = worksheet.addRow(['制表人：', footerData.maker, '', '', '', '财务部：', footerData.finance, '', '', '', '经理：', footerData.manager, '', '', '', '']);
+                const footerRow2 = worksheet.addRow(['制表时间：', footerData.makeDate, '', '', '', '签字及盖章：', footerData.financeStamp, '', '', '', '签字及盖章：', footerData.managerStamp, '', '', '', '']);
+                
+                // 设置页脚样式
+                for (let i = 1; i <= 2; i++) {
+                    const row = i === 1 ? footerRow1 : footerRow2;
+                    row.alignment = { horizontal: 'center', vertical: 'middle' };
+                    for (let j = 1; j <= 16; j++) {
+                        const cell = row.getCell(j);
+                        cell.border = {
+                            top: { style: 'thin' },
+                            left: { style: 'thin' },
+                            bottom: { style: 'thin' },
+                            right: { style: 'thin' }
+                        };
+                    }
+                }
+                
+                // 合并页脚单元格，确保与表格总宽度对齐
+                // 第一行：制表人、财务部、经理
+                worksheet.mergeCells(footerRow1.number, 1, footerRow1.number, 5);
+                worksheet.mergeCells(footerRow1.number, 6, footerRow1.number, 10);
+                worksheet.mergeCells(footerRow1.number, 11, footerRow1.number, 16);
+                
+                // 第二行：制表时间、财务部签字、经理签字
+                worksheet.mergeCells(footerRow2.number, 1, footerRow2.number, 5);
+                worksheet.mergeCells(footerRow2.number, 6, footerRow2.number, 10);
+                worksheet.mergeCells(footerRow2.number, 11, footerRow2.number, 16);
+                
+                showExportProgress('生成Excel文件...');
+                
+                // 生成Excel文件
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                saveAs(blob, `${year}年${month}月工资表.xlsx`);
+                
+                hideExportProgress();
+                
+            } catch (error) {
+                console.error('导出Excel失败:', error);
+                hideExportProgress();
+                showMessage('导出Excel失败，请稍后重试', 'error');
+            }
+        }
+        
+
+    </script>
+</body>
+</html>

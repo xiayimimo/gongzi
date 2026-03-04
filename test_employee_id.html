@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工序号测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        h2 {
+            margin-bottom: 15px;
+            color: #4CAF50;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        
+        .success {
+            color: #4CAF50;
+        }
+        
+        .error {
+            color: #f44336;
+        }
+        
+        .warning {
+            color: #ff9800;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>员工序号生成机制测试</h1>
+        
+        <div class="test-section">
+            <h2>测试1：添加员工序号生成</h2>
+            <button onclick="testAddEmployee()">测试添加员工</button>
+            <button onclick="resetTest()">重置测试</button>
+            <div class="test-result" id="test1-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>测试2：删除员工后序号更新</h2>
+            <button onclick="testDeleteEmployee()">测试删除员工</button>
+            <div class="test-result" id="test2-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>测试3：重复序号检测</h2>
+            <button onclick="testDuplicateIds()">测试重复序号</button>
+            <div class="test-result" id="test3-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>测试结果</h2>
+            <table id="test-results-table">
+                <thead>
+                    <tr>
+                        <th>测试项</th>
+                        <th>预期结果</th>
+                        <th>实际结果</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>添加员工序号</td>
+                        <td>序号递增且唯一</td>
+                        <td id="test1-actual"></td>
+                        <td id="test1-status"></td>
+                    </tr>
+                    <tr>
+                        <td>删除员工后序号</td>
+                        <td>序号连续且唯一</td>
+                        <td id="test2-actual"></td>
+                        <td id="test2-status"></td>
+                    </tr>
+                    <tr>
+                        <td>重复序号检测</td>
+                        <td>自动修复重复序号</td>
+                        <td id="test3-actual"></td>
+                        <td id="test3-status"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // 模拟员工序号生成机制
+        let employeeIdCounter = 0;
+        let employees = [];
+        
+        // 测试添加员工
+        function testAddEmployee() {
+            const resultDiv = document.getElementById('test1-result');
+            const actualDiv = document.getElementById('test1-actual');
+            const statusDiv = document.getElementById('test1-status');
+            
+            // 模拟添加3个员工
+            for (let i = 0; i < 3; i++) {
+                employeeIdCounter++;
+                employees.push({
+                    id: employeeIdCounter,
+                    name: `员工${employeeIdCounter}`,
+                    department: '测试部门'
+                });
+            }
+            
+            const employeeIds = employees.map(e => e.id).join(', ');
+            const hasDuplicates = new Set(employees.map(e => e.id)).size !== employees.length;
+            
+            resultDiv.innerHTML = `添加了3个员工，序号分别为：${employeeIds}`;
+            actualDiv.textContent = employeeIds;
+            
+            if (!hasDuplicates && employees.length === 3) {
+                statusDiv.textContent = '通过';
+                statusDiv.className = 'success';
+            } else {
+                statusDiv.textContent = '失败';
+                statusDiv.className = 'error';
+            }
+        }
+        
+        // 测试删除员工
+        function testDeleteEmployee() {
+            const resultDiv = document.getElementById('test2-result');
+            const actualDiv = document.getElementById('test2-actual');
+            const statusDiv = document.getElementById('test2-status');
+            
+            if (employees.length === 0) {
+                resultDiv.innerHTML = '请先添加员工';
+                return;
+            }
+            
+            // 模拟删除第一个员工
+            employees.shift();
+            
+            // 重新编号
+            employees.forEach((emp, index) => {
+                emp.id = index + 1;
+            });
+            
+            const employeeIds = employees.map(e => e.id).join(', ');
+            const isContinuous = checkContinuousIds(employees.map(e => e.id));
+            
+            resultDiv.innerHTML = `删除员工后，序号重新编号为：${employeeIds}`;
+            actualDiv.textContent = employeeIds;
+            
+            if (isContinuous) {
+                statusDiv.textContent = '通过';
+                statusDiv.className = 'success';
+            } else {
+                statusDiv.textContent = '失败';
+                statusDiv.className = 'error';
+            }
+        }
+        
+        // 测试重复序号检测
+        function testDuplicateIds() {
+            const resultDiv = document.getElementById('test3-result');
+            const actualDiv = document.getElementById('test3-actual');
+            const statusDiv = document.getElementById('test3-status');
+            
+            // 模拟创建重复序号
+            employees.push({ id: 1, name: '重复序号员工', department: '测试部门' });
+            
+            const hasDuplicates = new Set(employees.map(e => e.id)).size !== employees.length;
+            
+            // 修复重复序号
+            if (hasDuplicates) {
+                employees.forEach((emp, index) => {
+                    emp.id = index + 1;
+                });
+            }
+            
+            const fixedIds = employees.map(e => e.id).join(', ');
+            const isFixed = !hasDuplicates || new Set(employees.map(e => e.id)).size === employees.length;
+            
+            resultDiv.innerHTML = `检测到重复序号，已修复为：${fixedIds}`;
+            actualDiv.textContent = fixedIds;
+            
+            if (isFixed) {
+                statusDiv.textContent = '通过';
+                statusDiv.className = 'success';
+            } else {
+                statusDiv.textContent = '失败';
+                statusDiv.className = 'error';
+            }
+        }
+        
+        // 检查序号是否连续
+        function checkContinuousIds(ids) {
+            if (ids.length === 0) return true;
+            
+            const sortedIds = [...ids].sort((a, b) => a - b);
+            for (let i = 0; i < sortedIds.length; i++) {
+                if (sortedIds[i] !== i + 1) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // 重置测试
+        function resetTest() {
+            employeeIdCounter = 0;
+            employees = [];
+            
+            // 重置所有测试结果
+            document.getElementById('test1-result').innerHTML = '';
+            document.getElementById('test2-result').innerHTML = '';
+            document.getElementById('test3-result').innerHTML = '';
+            
+            document.getElementById('test1-actual').textContent = '';
+            document.getElementById('test2-actual').textContent = '';
+            document.getElementById('test3-actual').textContent = '';
+            
+            document.getElementById('test1-status').textContent = '';
+            document.getElementById('test2-status').textContent = '';
+            document.getElementById('test3-status').textContent = '';
+            
+            document.getElementById('test1-status').className = '';
+            document.getElementById('test2-status').className = '';
+            document.getElementById('test3-status').className = '';
+        }
+    </script>
+</body>
+</html>
